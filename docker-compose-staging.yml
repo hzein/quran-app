@@ -1,0 +1,9 @@
+version: "3.9"
+
+services:
+  quran-app:
+    image: hzein86/quran-app:latest
+    ports:
+      - "80:80"
+    env_file:
+      - .env
