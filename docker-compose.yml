@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  quran-app:
+    image: hzein86/quran-app:latest
+    ports:
+      - "80:80"
+    secrets:
+      - openai_key
+      - supabase_key
+      - admin_access_key
+      - user_access_key
+      - supabase_url
+    environment:
+      - SUPABASE_URL=/run/secrets/supabase_url
+      - SUPABASE_SERVICE_KEY=/run/secrets/supabase_key
+      - OPENAI_API_KEY=/run/secrets/openai_key
+      - ADMIN_API_KEY=/run/secrets/admin_access_key
+      - USER_API_KEY=/run/secrets/user_access_key
+
+secrets:
+  openai_key:
+    file: ./secrets/openai_key.txt
+  supabase_key:
+    file: ./secrets/supabase_key.txt
+  admin_access_key:
+    file: ./secrets/admin_access_key.txt
+  user_access_key:
+    file: ./secrets/user_access_key.txt
+  supabase_url:
+    file: ./secrets/supabase_url.txt
