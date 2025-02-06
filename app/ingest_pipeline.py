@@ -1,5 +1,6 @@
 import os
 import json
+import time
 from dataclasses import dataclass
 from typing import List, Dict, Any
 from dotenv import load_dotenv
@@ -113,8 +114,12 @@ async def process_insert_quran_document(data: pd.DataFrame, inserted_num_chunks:
     sura = ""
     counter = 1
     chunk = ""
+    type = ""
+    subtype = ""
     footnote_json = None
     total_chunks = len(data)
+    sura_number = None
+    verse_number = None
 
     for index, row in data.iterrows():
         if row["subtype"] == "sura":
@@ -145,11 +150,7 @@ async def process_insert_quran_document(data: pd.DataFrame, inserted_num_chunks:
         type = row["type"]
         subtype = row["subtype"]
         sura_number = row["main_id"]
-        verse_number = (
-            row["minor_id"]
-            if isinstance(row["minor_id"], int) and row["minor_id"] > 0
-            else None
-        )
+        verse_number = row["minor_id"] if int(row["minor_id"]) > 0 else None
 
         processed_chunk = await process_chunk(
             chunk=chunk,
@@ -168,6 +169,20 @@ async def process_insert_quran_document(data: pd.DataFrame, inserted_num_chunks:
         chunk = ""
         content = ""
         footnote_json = None
+        sura_number = None
+        verse_number = None
+    if chunk:
+        processed_chunk = await process_chunk(
+            chunk=chunk,
+            chunk_number=inserted_num_chunks + counter,
+            type=type,
+            subtype=subtype,
+            sura=sura,
+            sura_number=sura_number,
+            verse_number=verse_number,
+            footnote_json=footnote_json,
+        )
+        await insert_chunk(processed_chunk, total_chunks)
     return total_chunks
 
 
@@ -205,7 +220,7 @@ async def process_insert_none_verses(
     df: pd.DataFrame,
     max_chunk_len: int = 1000,
     min_chunk_len: int = 100,
-    inserted_num_chunks: int = 0,
+    start_num_chunks: int = 0,
 ):
     """
     Creates chunks of text from a DataFrame containing headings and paragraphs.
@@ -328,19 +343,17 @@ async def process_insert_none_verses(
     for i, chunk in enumerate(chunks):
         processed_chunk = await process_chunk(
             chunk=chunk,
-            chunk_number=i + 1 + inserted_num_chunks,
+            chunk_number=i + 1 + start_num_chunks,
             type=type,
             subtype=subtype,
             data_json=data_json,
         )
         await insert_chunk(processed_chunk, len(chunks))
 
-    return len(chunks)
+    return len(chunks) + start_num_chunks
 
 
-async def process_and_store_document(
-    data: pd.DataFrame, type: str, inserted_num_chunks: int = 0
-):
+async def process_and_store_document(data: pd.DataFrame, type: str, start_num_chunks: int = 0):
     """Process and store all chunks of a document."""
     if type == "quran":
         total_chunks_inserted = await process_insert_quran_document(data)
@@ -349,25 +362,31 @@ async def process_and_store_document(
             data,
             max_chunk_len=1000,
             min_chunk_len=100,
-            inserted_num_chunks=inserted_num_chunks,
+            start_num_chunks=start_num_chunks,
         )
     return total_chunks_inserted
 
 
 async def main():
-    quran_csv_path = "Quran CSV.xlsx"
+    start_time = time.time()
+
+    print("Current working directory:", os.getcwd())
+
+    quran_csv_path = "../dev/Quran CSV.xlsx"
     quran_df = get_quran_data(quran_csv_path)
     # Assign values where type is 'quran'
     quran_df_verses = quran_df[quran_df["type"] == "quran"]
-    quran_df_no_verses = quran_df[quran_df["type"] != "quran"]
+    quran_df_no_verses = quran_df[~quran_df["type"].isin(["quran", "glossary", "index"])]
 
-    input = quran_df_verses[:20]
-    total_chunks = await process_and_store_document(input, "quran")
-    input = quran_df_no_verses[:75]
+    total_chunks = await process_and_store_document(quran_df_verses, "quran")
+    print(f"Quran Chunks: {total_chunks} inserted")
     total_chunks = await process_and_store_document(
-        input, "none_verses", inserted_num_chunks=total_chunks
+        quran_df_no_verses, "none_verses", start_num_chunks=total_chunks
     )
     print(f"Total Chunks: {total_chunks} inserted")
+
+    end_time = time.time()
+    print(f"Total time: {end_time - start_time:.2f} seconds")
 
 
 if __name__ == "__main__":
