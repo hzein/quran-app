@@ -183,7 +183,7 @@ def concatenate_contents(api_response):
     concatenated_content = ""
     for item in api_response:
         if "content" in item:
-            concatenated_content += f"item['content'] \n"
+            concatenated_content += f"{item['content']} \n"
     return concatenated_content
 
 
@@ -220,12 +220,10 @@ async def retrieve_documents(
 @app.post("/generate")
 async def generate_response(
     query: str,
-    db: Session = Depends(get_db),
     current_user: User = Depends(api_key_auth),
 ):
     response = await retrieve_relevant_documentation(user_query=query)
     context = concatenate_contents(response)
-    print(f"Context: {context}")
 
     # Call the generate function (note: not awaited since it returns a generator)
     stream = generate(query=query, context=context)
