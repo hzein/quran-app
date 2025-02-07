@@ -260,7 +260,7 @@ async def process_insert_none_verses(
         subtype = row["subtype"]
         data_json = row["data"] if pd.notna(row["data"]) else None
         type = (
-            f"{row['type']} int(str(row['main_id'])[-2:])"
+            f"{row['type']} {int(str(row['main_id'])[-2:])}"
             if row["type"] == "appendix"
             else row["type"]
         )
@@ -283,10 +283,10 @@ async def process_insert_none_verses(
 
             # Add the special chunk to the chunks list.
             chunks.append(special_chunk)
-            # If there is content in the "data" column, add it to chunk_details.
-            if pd.notna(data_json):
-                chunks_details.append({"type": type, "data_json": data_json})
-                data_json = None
+            # # If there is content in the "data" column, add it to chunk_details.
+            # if pd.notna(data_json):
+            chunks_details.append({"type": type, "data_json": data_json})
+            data_json = None
 
             # After processing a table or list row, treat it as a non-heading.
             last_row_was_heading = False
@@ -344,9 +344,9 @@ async def process_insert_none_verses(
         processed_chunk = await process_chunk(
             chunk=chunk,
             chunk_number=i + 1 + start_num_chunks,
-            type=type,
+            type=chunks_details[i]["type"],
             subtype=subtype,
-            data_json=data_json,
+            data_json=chunks_details[i]["data_json"],
         )
         await insert_chunk(processed_chunk, len(chunks))
 
@@ -379,14 +379,13 @@ async def main():
     quran_df_no_verses = quran_df[~quran_df["type"].isin(["quran", "glossary", "index"])]
 
     total_chunks = await process_and_store_document(quran_df_verses, "quran")
-    print(f"Quran Chunks: {total_chunks} inserted")
     total_chunks = await process_and_store_document(
         quran_df_no_verses, "none_verses", start_num_chunks=total_chunks
     )
     print(f"Total Chunks: {total_chunks} inserted")
 
     end_time = time.time()
-    print(f"Total time: {end_time - start_time:.2f} seconds")
+    print(f"Total time: {((end_time - start_time)/60):.2f} minutes")
 
 
 if __name__ == "__main__":

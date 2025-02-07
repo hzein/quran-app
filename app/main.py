@@ -16,6 +16,9 @@ from sqlalchemy.orm import sessionmaker, Session, relationship
 # Load retrieve relevant context
 from app.retrieve_relevant_context import retrieve_relevant_documentation
 
+# Generate response
+from app.google_api import generate_response
+
 load_dotenv()
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./app.db"
@@ -164,6 +167,25 @@ def get_db():
 # Endpoints
 
 
+def concatenate_contents(api_response):
+    """
+    Concatenates the 'content' field from each item in the API response.
+
+    Args:
+      api_response: A list of dictionaries, where each dictionary represents
+                    an item from the API response and has a 'content' key.
+
+    Returns:
+      A string containing the concatenated contents from all items in the
+      API response.
+    """
+    concatenated_content = ""
+    for item in api_response:
+        if "content" in item:
+            concatenated_content += f"item['content'] \n"
+    return concatenated_content
+
+
 @app.get("/health/")
 async def root(current_user: User = Depends(api_key_auth)):
     return {"Health": "Server running"}
@@ -173,7 +195,6 @@ async def root(current_user: User = Depends(api_key_auth)):
 async def ingest_document(
     file: UploadFile = File(None),
     text: str = Form(None),
-    db: Session = Depends(get_db),
     current_user: User = Depends(api_key_auth),
 ):
     if file:
@@ -183,11 +204,7 @@ async def ingest_document(
     else:
         raise HTTPException(status_code=400, detail="No input provided")
 
-    doc_id = str(uuid.uuid4())
-    db_document = Document(id=doc_id, content=content, owner_id=current_user.id)
-    db.add(db_document)
-    db.commit()
-    return {"id": doc_id}
+    return {"response": f"Not implemented yet {text}"}
 
 
 @app.get("/retrieve/")
@@ -205,7 +222,10 @@ async def generate_respose(
     db: Session = Depends(get_db),
     current_user: User = Depends(api_key_auth),
 ):
-    return "Not implemented yet"
+    response = await retrieve_relevant_documentation(user_query=query)
+    context = concatenate_contents(response)
+    print(f"Context: {context}")
+    return await generate_response(query=query, context=context)
 
 
 # @app.post("/chat/start", response_model=ChatSessionOut)
@@ -220,7 +240,7 @@ async def generate_respose(
 #     return db_session
 
 
-# @app.post("/chat/{session_id}", response_model=ChatSessionOut)
+# @app.post("/chat/", response_model=ChatSessionOut)
 # async def chat(
 #     session_id: str,
 #     message: ChatMessageCreate,

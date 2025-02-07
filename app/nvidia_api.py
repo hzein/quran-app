@@ -1,15 +1,19 @@
+import os
+from dotenv import load_dotenv
 from openai import OpenAI
+
+load_dotenv()
 
 client = OpenAI(
     base_url="https://integrate.api.nvidia.com/v1",
-    api_key="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",
+    api_key=os.getenv("NVIDIA_API_KEY"),
 )
 
 system_prompt = "You are an AI assistant that strictly answers from the context given to you." 
 
-def generate_response(query: str, context: str = None):
+def generate_response(query: str, context: str = None, model_name: str = "deepseek-ai/deepseek-r1"):
     completion = client.chat.completions.create(
-        model="deepseek-ai/deepseek-r1",
+        model=model_name,
         messages=[
             {
                 "role": "system",
@@ -29,26 +33,3 @@ def generate_response(query: str, context: str = None):
     for chunk in completion:
         if chunk.choices[0].delta.content is not None:
             print(chunk.choices[0].delta.content, end="")
-
-
-
-from groq import Groq
-
-client = Groq()
-completion = client.chat.completions.create(
-    model="deepseek-r1-distill-llama-70b",
-    messages=[
-        {
-            "role": "user",
-            "content": ""
-        }
-    ],
-    temperature=0.6,
-    max_completion_tokens=4096,
-    top_p=0.95,
-    stream=True,
-    stop=None,
-)
-
-for chunk in completion:
-    print(chunk.choices[0].delta.content or "", end="")
