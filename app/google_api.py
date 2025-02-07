@@ -55,7 +55,6 @@ def generate(query: str, context: str = None, model_name: str = "gemini-2.0-pro-
     config = types.GenerateContentConfig(
         system_instruction=system_instruction,
         temperature=0.1,
-        stop_sequences=["\n"],
         seed=42,
     )
 
