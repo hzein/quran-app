@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import uuid
 import os
 from dotenv import load_dotenv
+from fastapi.responses import StreamingResponse
 
 # Database setup
 from sqlalchemy import create_engine, Column, String, Text, ForeignKey, DateTime
@@ -17,7 +18,7 @@ from sqlalchemy.orm import sessionmaker, Session, relationship
 from app.retrieve_relevant_context import retrieve_relevant_documentation
 
 # Generate response
-from app.google_api import generate_response
+from app.google_api import generate
 
 load_dotenv()
 
@@ -217,7 +218,7 @@ async def retrieve_documents(
 
 
 @app.post("/generate")
-async def generate_respose(
+async def generate_response(
     query: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(api_key_auth),
@@ -225,7 +226,12 @@ async def generate_respose(
     response = await retrieve_relevant_documentation(user_query=query)
     context = concatenate_contents(response)
     print(f"Context: {context}")
-    return await generate_response(query=query, context=context)
+
+    # Call the generate function (note: not awaited since it returns a generator)
+    stream = generate(query=query, context=context)
+
+    # Return a StreamingResponse so that the client receives the stream in real time.
+    return StreamingResponse(stream, media_type="text/plain")
 
 
 # @app.post("/chat/start", response_model=ChatSessionOut)
