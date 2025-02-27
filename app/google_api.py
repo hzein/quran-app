@@ -1,24 +1,24 @@
-import os
-from dotenv import load_dotenv
-from google import genai
-from google.genai import types
+# import os
+# from dotenv import load_dotenv
+# from google import genai
+# from google.genai import types
 
-load_dotenv()
+# load_dotenv()
 
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+# client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-for chunk in client.models.generate_content_stream(
-    model="gemini-2.0-pro-exp-02-05",
-    contents="Tell me a story in 300 words.",
-    config=types.GenerateContentConfig(
-        system_instruction="you are an AI assistant that strictly follows the context provided to answer question. Don't bring any outside information outside of the context provided.",
-        temperature=0.1,
-        response_mime_type="application/json",
-        stop_sequences=["\n"],
-        seed=42,
-    ),
-):
-    print(chunk.text)
+# for chunk in client.models.generate_content_stream(
+#     model="gemini-2.0-pro-exp-02-05",
+#     contents="Tell me a story in 300 words.",
+#     config=types.GenerateContentConfig(
+#         system_instruction="You are an AI assistant that strictly follows the context provided to answer question. Don't bring any outside information outside of the context provided.",
+#         temperature=0,
+#         response_mime_type="application/json",
+#         stop_sequences=["\n"],
+#         seed=42,
+#     ),
+# ):
+#     print(chunk.text)
 
 import os
 from dotenv import load_dotenv

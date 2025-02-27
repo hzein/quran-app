@@ -2,6 +2,6 @@ services:
   quran-app:
     image: hzein86/quran-app:latest
     ports:
-      - "80:80"
+      - "5678:80"
     env_file:
       - .env

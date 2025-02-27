@@ -187,7 +187,7 @@ def concatenate_contents(api_response):
     return concatenated_content
 
 
-@app.get("/health/")
+@app.get("/")
 async def root(current_user: User = Depends(api_key_auth)):
     return {"Health": "Server running"}
 
