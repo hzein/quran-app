@@ -1,3 +1,4 @@
+version: "3.8"
 services:
   quran-app:
     image: hzein86/quran-app:latest
@@ -5,3 +6,10 @@ services:
       - "5678:80"
     env_file:
       - .env
+    deploy:
+      update_config:
+        order: start-first
+      restart_policy:
+        condition: any
+
+
