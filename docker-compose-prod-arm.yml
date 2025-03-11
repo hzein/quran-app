@@ -1,0 +1,14 @@
+version: "3.8"
+services:
+  quran-app:
+    image: hzein86/quran-app:arm_v1
+    ports:
+      - "5678:80"
+    env_file:
+      - .env
+    deploy:
+      update_config:
+        order: start-first
+      restart_policy:
+        condition: any
+
