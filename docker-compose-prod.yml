@@ -11,5 +11,5 @@ services:
         order: start-first
       restart_policy:
         condition: any
-
+    platform: linux/arm64 # If deploying on linux/amd64
 
