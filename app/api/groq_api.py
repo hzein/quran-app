@@ -9,9 +9,7 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 system_prompt = "You are an AI assistant that strictly answers from the context given to you."
 
 
-async def generate_groq(
-    query: str, context: str = None, model: str = "deepseek-r1-distill-llama-70b"
-):
+async def generate_groq(query: str, context: str, model: str):
     completion = client.chat.completions.create(
         model=model,
         messages=[

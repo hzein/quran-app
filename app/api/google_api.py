@@ -30,9 +30,7 @@ load_dotenv()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 
-async def generate_google(
-    query: str, context: str = None, model: str = "gemini-2.0-pro-exp-02-05"
-):
+async def generate_google(query: str, context: str, model: str):
     """
     Generates content by streaming the response from the Gemini API.
 

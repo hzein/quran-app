@@ -1,4 +1,3 @@
-import asyncio
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
 from fastapi.security import APIKeyHeader
 import os
@@ -6,7 +5,11 @@ from dotenv import load_dotenv
 from fastapi.responses import StreamingResponse
 
 # Load retrieve relevant context
-from app.api.retrieve_relevant_context import retrieve_relevant_documentation
+from app.api.retrieve_relevant_context import (
+    retrieve_relevant_documentation,
+    get_embedding,
+    query_cache,
+)
 
 # Generate response
 from app.utils.utils import concatenate_contents, get_approproate_generate_func
@@ -38,7 +41,7 @@ async def root(current_user=Depends(api_key_auth)):
     return {"Health": "Server running"}
 
 
-@app.post("/ingest/")
+@app.post("/ingest")
 async def ingest_document(
     file: UploadFile = File(None),
     text: str = Form(None),
@@ -54,18 +57,21 @@ async def ingest_document(
     return {"response": f"Not implemented yet {text}"}
 
 
-@app.get("/retrieve/")
+@app.get("/retrieve")
 async def retrieve_documents(
     query: str,
     current_user=Depends(api_key_auth),
 ):
-    return await retrieve_relevant_documentation(user_query=query)
+    # Get the embedding for the query
+    embedding = await get_embedding(query)
+
+    return await retrieve_relevant_documentation(embedding)
 
 
 @app.get("/generate")
 async def generate_response(
     query: str,
-    model: str,
+    model: str | None = None,
     current_user=Depends(api_key_auth),
 ):
     if query is None:
@@ -73,22 +79,33 @@ async def generate_response(
             status_code=400,
             detail="No query provided",
         )
+    if model is None:
+        model = "google:gemini-2.0-pro-exp-02-05"
     if ":" not in model:
         raise HTTPException(
             status_code=400,
             detail="Invalid model format. Please use format 'provider_name:model_name'",
         )
-    response = await retrieve_relevant_documentation(user_query=query)
-    context = concatenate_contents(response)
 
-    # Call the generate function (note: not awaited since it returns a generator)
-    model, generate_func = get_approproate_generate_func(model=model)
+    # Get the embedding for the query
+    embedding = await get_embedding(query)
 
-    # Return a StreamingResponse so that the client receives the stream in real time.
-    return StreamingResponse(
-        generate_func(context=context, query=query, model=model),
-        media_type="text/plain",
-    )
+    # Check the cache for the query
+    cached_result = await query_cache(embedding)
+    if cached_result:
+        return StreamingResponse(iter([cached_result]), media_type="text/plain")
+    else:
+        response = await retrieve_relevant_documentation(embedding)
+        context = concatenate_contents(response)
+
+        # Call the generate function (note: not awaited since it returns a generator)
+        model, generate_func = get_approproate_generate_func(model=model)
+
+        # Return a StreamingResponse so that the client receives the stream in real time.
+        return StreamingResponse(
+            generate_func(context=context, query=query, model=model),
+            media_type="text/plain",
+        )
 
 
 if __name__ == "__main__":
