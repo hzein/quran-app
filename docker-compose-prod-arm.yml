@@ -1,7 +1,8 @@
-version: "3.8"
+version: "3.9"
 services:
   quran-app:
     image: hzein86/quran-app:arm_v1
+    pull_policy: always
     ports:
       - "5678:80"
     env_file:
@@ -11,4 +12,3 @@ services:
         order: start-first
       restart_policy:
         condition: any
-
