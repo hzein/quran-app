@@ -58,12 +58,19 @@ async def generate_google(query: str, context: str, model: str):
         seed=42,
     )
 
-    try:
-        for chunk in client.models.generate_content_stream(
-            model=model,
-            contents=contents,
-            config=config,
-        ):
-            yield chunk.text
-    except Exception as e:
-        yield f"An error occurred: {e}"
+    # try:
+    #     for chunk in client.models.generate_content_stream(
+    #         model=model,
+    #         contents=contents,
+    #         config=config,
+    #     ):
+    #         yield chunk.text
+    # except Exception as e:
+    #     yield f"An error occurred: {e}"
+
+    response = client.models.generate_content(
+        model=model,
+        contents=contents,
+        config=config,
+    )
+    return response

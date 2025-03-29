@@ -9,10 +9,15 @@ from app.api.retrieve_relevant_context import (
     retrieve_relevant_documentation,
     get_embedding,
     query_cache,
+    set_cache,
 )
 
 # Generate response
-from app.utils.utils import concatenate_contents, get_approproate_generate_func
+from app.utils.utils import (
+    concatenate_contents,
+    get_approproate_generate_func,
+    generate_redis_response,
+)
 
 load_dotenv()
 
@@ -68,7 +73,7 @@ async def retrieve_documents(
     return await retrieve_relevant_documentation(embedding)
 
 
-@app.get("/generate")
+@app.get("/generateWithoutRef")
 async def generate_response(
     query: str,
     model: str | None = None,
@@ -93,19 +98,109 @@ async def generate_response(
     # Check the cache for the query
     cached_result = await query_cache(embedding)
     if cached_result:
-        return StreamingResponse(iter([cached_result]), media_type="text/plain")
+        return StreamingResponse(
+            generate_redis_response(cached_result),
+            headers={"X-Response-Source": "cache"},
+            media_type="text/plain",
+        )
     else:
         response = await retrieve_relevant_documentation(embedding)
-        context = concatenate_contents(response)
+        context, array_of_contents = concatenate_contents(response)
 
         # Call the generate function (note: not awaited since it returns a generator)
         model, generate_func = get_approproate_generate_func(model=model)
 
         # Return a StreamingResponse so that the client receives the stream in real time.
         return StreamingResponse(
-            generate_func(context=context, query=query, model=model),
+            content=generate_func(context=context, query=query, model=model),
+            headers={"X-Response-Source": "llm"},
             media_type="text/plain",
         )
+
+
+@app.get("/generate")
+async def generate_response(
+    query: str,
+    model: str | None = None,
+    current_user=Depends(api_key_auth),
+):
+    if query is None:
+        raise HTTPException(
+            status_code=400,
+            detail="No query provided",
+        )
+    if model is None:
+        model = "google:gemini-2.0-pro-exp-02-05"
+    if ":" not in model:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid model format. Please use format 'provider_name:model_name'",
+        )
+
+    # Get the embedding for the query
+    embedding = await get_embedding(query)
+
+    response = await retrieve_relevant_documentation(embedding)
+    context, array_of_contents = concatenate_contents(response)
+
+    # Check the cache for the query
+    cached_result = await query_cache(embedding)
+    if cached_result:
+        # return StreamingResponse(
+        #     content=generate_redis_response(cached_result),
+        #     headers={"X-Response-Source": "cache"},
+        #     media_type="text/plain",
+        # )
+        content, doc_id = generate_redis_response(cached_result)
+        return {
+            "content": content,
+            "context": array_of_contents,
+            "response_source": f"cache-{doc_id}",
+        }
+    else:
+        # Call the generate function (note: not awaited since it returns a generator)
+        model, generate_func = get_approproate_generate_func(model=model)
+
+        # Return a StreamingResponse so that the client receives the stream in real time.
+        # return StreamingResponse(
+        #     content=generate_func(context=context, query=query, model=model),
+        #     headers={"X-Response-Source": "llm"},
+        #     media_type="text/plain",
+        # )
+        response = await generate_func(context=context, query=query, model=model)
+        response = response.candidates[0].content.parts[0].text
+        return {
+            "content": response,
+            "context": array_of_contents,
+            "response_source": "llm",
+        }
+
+
+@app.post("/addtocache")
+async def addtocache(
+    query: str,
+    content: str,
+    current_user=Depends(api_key_auth),
+):
+    response = await set_cache(query=query, content=content)
+    if response == "success":
+        return {"response": "Cache set successfully"}
+    else:
+        raise HTTPException(status_code=500, detail=response)
+
+
+@app.post("/updatecache")
+async def addtocache(
+    query: str,
+    content: str,
+    doc_id: str,
+    current_user=Depends(api_key_auth),
+):
+    response = await set_cache(query=query, content=content, doc_id=doc_id)
+    if response == "success":
+        return {"response": "Cache updated successfully"}
+    else:
+        raise HTTPException(status_code=500, detail=response)
 
 
 if __name__ == "__main__":

@@ -16,10 +16,12 @@ def concatenate_contents(context):
       API response.
     """
     concatenated_content = ""
+    array_of_contents = []
     for item in context:
         if "content" in item:
             concatenated_content += f"{item['content']} \n"
-    return concatenated_content
+            array_of_contents.append(f"{item['content']} \n")
+    return concatenated_content, array_of_contents
 
 
 def get_approproate_generate_func(model: str) -> str:
@@ -45,3 +47,13 @@ def get_approproate_generate_func(model: str) -> str:
         return model_name, generate_groq
     else:
         raise ValueError(f"Invalid provider name: {provider_name}")
+
+
+def generate_redis_chunk_response(text: str):
+    for char in text:
+        # Simulate data generation and yield data as bytes.
+        yield f"{char}".encode("utf-8")
+
+
+def generate_redis_response(text: str):
+    return text

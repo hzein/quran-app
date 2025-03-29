@@ -45,10 +45,40 @@ async def query_cache(embedding_query: List) -> str:
         return None
 
     filtered_results = [doc for doc in result.docs if float(doc["vector_distance"]) < 0.9]
-
     if not filtered_results:
         return None
-    return filtered_results[0]["content"]
+    return filtered_results[0]["content"], filtered_results[0]["id"]
+
+
+async def set_cache(query: str, content: str, doc_id: str = None):
+    """Set the cache with the user query."""
+
+    try:
+        if not doc_id:
+            # Get the current keys
+            docs = redis_client.keys("doc:*")
+            index = 0
+            if docs:
+                indices = [int(doc.split(":")[1]) for doc in docs]
+                index = max(indices) + 1
+                doc_id = f"doc:{index}"
+
+        # Get the embedding
+        embedding = await get_embedding(query)
+
+        redis_client.hset(
+            doc_id,
+            mapping={
+                "query": query,
+                "content": content,
+                "type": "verse",
+                "embedding": np.array(embedding, dtype=np.float32).tobytes(),
+            },
+        )
+        return "success"
+    except Exception as e:
+        print(f"Error setting cache: {e}")
+        return f"Error setting cache: {str(e)}"
 
 
 async def retrieve_relevant_documentation(embedding: List) -> str:
