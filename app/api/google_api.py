@@ -73,4 +73,4 @@ async def generate_google(query: str, context: str, model: str):
         contents=contents,
         config=config,
     )
-    return response
+    return response.candidates[0].content.parts[0].text
