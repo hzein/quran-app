@@ -168,7 +168,7 @@ async def generate_response(
         #     media_type="text/plain",
         # )
         response = await generate_func(context=context, query=query, model=model)
-        response = response.candidates[0].content.parts[0].text
+        # response = response.candidates[0].content.parts[0].text
         return {
             "content": response,
             "context": array_of_contents,

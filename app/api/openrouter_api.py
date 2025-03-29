@@ -32,12 +32,14 @@ async def generate_openrouter(query: str, context: str, model: str):
                 "content": f"{'Context: ' + context + '\\n\\n' if context else ''}{query}",
             },
         ],
-        stream=True,
+        stream=False,
     )
 
     # print(completion.choices[0].message.content)
-    for chunk in completion:
-        yield chunk.choices[0].delta.content
+    # for chunk in completion:
+    #     yield chunk.choices[0].delta.content
+
+    return completion.choices[0].message.content
 
 
 # url = "https://openrouter.ai/api/v1/chat/completions"
