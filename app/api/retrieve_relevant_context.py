@@ -81,7 +81,7 @@ async def set_cache(query: str, content: str, doc_id: str = None):
         return f"Error setting cache: {str(e)}"
 
 
-async def retrieve_relevant_documentation(embedding: List) -> str:
+async def retrieve_relevant_documentation(embedding: List, match_count: int = 10) -> str:
     """
     Retrieve relevant documentation chunks based on the query with RAG.
 
@@ -93,7 +93,7 @@ async def retrieve_relevant_documentation(embedding: List) -> str:
     try:
         # Query Supabase for relevant documents
         result = supabase.rpc(
-            "match_quran", {"query_embedding": embedding, "match_count": 10}
+            "match_quran", {"query_embedding": embedding, "match_count": match_count}
         ).execute()
         if not result.data:
             return "No relevant documentation found."
