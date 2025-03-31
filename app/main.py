@@ -65,12 +65,13 @@ async def ingest_document(
 @app.get("/retrieve")
 async def retrieve_documents(
     query: str,
+    match_count: int = 10,
     current_user=Depends(api_key_auth),
 ):
     # Get the embedding for the query
     embedding = await get_embedding(query)
 
-    return await retrieve_relevant_documentation(embedding)
+    return await retrieve_relevant_documentation(embedding, match_count)
 
 
 @app.get("/generateWithoutRef")
