@@ -81,6 +81,12 @@ async def set_cache(query: str, content: str, doc_id: str = None):
         return f"Error setting cache: {str(e)}"
 
 
+async def delete_cache(doc_id: str):
+    """Delete the cache for the user query."""
+    redis_client.delete(doc_id)
+    return "success"
+
+
 async def retrieve_relevant_documentation(embedding: List, match_count: int = 10) -> str:
     """
     Retrieve relevant documentation chunks based on the query with RAG.

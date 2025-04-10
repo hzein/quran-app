@@ -10,6 +10,7 @@ from app.api.retrieve_relevant_context import (
     get_embedding,
     query_cache,
     set_cache,
+    delete_cache,
 )
 
 # Generate response
@@ -201,6 +202,14 @@ async def addtocache(
         return {"response": "Cache updated successfully"}
     else:
         raise HTTPException(status_code=500, detail=response)
+
+
+@app.delete("/deletecache")
+async def deletecache(
+    doc_id: str,
+    current_user=Depends(api_key_auth),
+):
+    response = await delete_cache(doc_id=doc_id)
 
 
 if __name__ == "__main__":
