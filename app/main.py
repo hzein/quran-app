@@ -4,10 +4,10 @@ import os
 from dotenv import load_dotenv
 from fastapi.responses import StreamingResponse
 
-# Load retrieve relevant context
 from app.api.retrieve_relevant_context import (
-    retrieve_relevant_documentation,
     get_embedding,
+    retrieve_relevant_documentation,
+    retrieve_relevant_documentation_ids,
     query_cache,
     set_cache,
     delete_cache,
@@ -73,6 +73,18 @@ async def retrieve_documents(
     embedding = await get_embedding(query)
 
     return await retrieve_relevant_documentation(embedding, match_count)
+
+
+@app.get("/retrieveids")
+async def retrieve_ids(
+    query: str,
+    match_count: int = 10,
+    current_user=Depends(api_key_auth),
+):
+    # Get the embedding for the query
+    embedding = await get_embedding(query)
+
+    return await retrieve_relevant_documentation_ids(embedding, match_count)
 
 
 @app.get("/generateWithoutRef")

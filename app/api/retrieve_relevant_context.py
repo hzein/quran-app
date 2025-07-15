@@ -109,3 +109,36 @@ async def retrieve_relevant_documentation(embedding: List, match_count: int = 10
     except Exception as e:
         print(f"Error retrieving documentation: {e}")
         return f"Error retrieving documentation: {str(e)}"
+
+
+async def retrieve_relevant_documentation_ids(
+    embedding: List, match_count: int = 10
+) -> List[List[int]]:
+    """
+    Retrieve relevant documentation chunks based on the query with RAG.
+
+    Args:
+        embedding: The embedding vector for the query
+        match_count: Number of matches to return
+    Returns:
+        A list of order_ids arrays from the most relevant documentation chunks
+    """
+    try:
+        # Query Supabase for relevant documents
+        result = supabase.rpc(
+            "match_quran", {"query_embedding": embedding, "match_count": match_count}
+        ).execute()
+        if not result.data:
+            return []
+
+        # Extract order_ids from each result
+        order_ids_list = []
+        for item in result.data:
+            if "metadata" in item and "order_ids" in item["metadata"]:
+                order_ids_list.append(item["metadata"]["order_ids"])
+
+        return order_ids_list
+
+    except Exception as e:
+        print(f"Error retrieving documentation: {e}")
+        return []

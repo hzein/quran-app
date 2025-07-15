@@ -18,3 +18,5 @@ dev/
 .vscode
 
 *.ipynb
+
+credentials.json
