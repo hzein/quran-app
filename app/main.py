@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
 from fastapi.security import APIKeyHeader
 import os
+import logging
 from dotenv import load_dotenv
 from fastapi.responses import StreamingResponse
 
@@ -9,15 +10,20 @@ from app.api.retrieve_relevant_context import (
     retrieve_relevant_documentation,
     retrieve_relevant_documentation_ids,
     query_cache,
+    retrieve_relevant_documentation_qdrant_payload,
     set_cache,
     delete_cache,
+    retrieve_relevant_documentation_qdrant_ids,
 )
+
+from app.api.groq_api import get_filters_groq
 
 # Generate response
 from app.utils.utils import (
     concatenate_contents,
     get_approproate_generate_func,
     generate_redis_response,
+    get_query_filters,
 )
 
 load_dotenv()
@@ -75,7 +81,7 @@ async def retrieve_documents(
     return await retrieve_relevant_documentation(embedding, match_count)
 
 
-@app.get("/retrieveids")
+@app.get("/retrieveidsSupabase")
 async def retrieve_ids(
     query: str,
     match_count: int = 10,
@@ -85,6 +91,47 @@ async def retrieve_ids(
     embedding = await get_embedding(query)
 
     return await retrieve_relevant_documentation_ids(embedding, match_count)
+
+
+@app.get("/retrieveQdrant")
+async def retrieve_documents_qdrant(
+    query: str,
+    match_count: int = 10,
+    current_user=Depends(api_key_auth),
+):
+    # Get the embedding for the query
+    embedding = await get_embedding(query)
+    # Get the filters from the query
+    model = os.getenv("GROQ_MODEL")
+    filters = await get_filters_groq(query, model)
+    logging.info(f"Filters: {filters}")
+
+    # Create a filter object
+    filter = get_query_filters(filters)
+
+    # Get the relevant documentation ids
+    return await retrieve_relevant_documentation_qdrant_payload(embedding, match_count, filter)
+
+
+@app.get("/retrieveids")
+async def retrieve_ids(
+    query: str,
+    match_count: int = 10,
+    current_user=Depends(api_key_auth),
+):
+    # Get the embedding for the query
+    embedding = await get_embedding(query)
+    # Get the filters from the query
+    model = os.getenv("GROQ_MODEL")
+    logging.info(f"Model: {model}")
+    filters = await get_filters_groq(query, model)
+    logging.info(f"Filters: {filters}")
+
+    # Create a filter object
+    filter = get_query_filters(filters)
+
+    # Get the relevant documentation ids
+    return await retrieve_relevant_documentation_qdrant_ids(embedding, match_count, filter)
 
 
 @app.get("/generateWithoutRef")

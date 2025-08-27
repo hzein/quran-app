@@ -7,6 +7,7 @@ from supabase import Client
 from typing import List
 import numpy as np
 import redis
+import requests
 
 from redis.commands.search.query import Query
 
@@ -15,6 +16,8 @@ load_dotenv()
 openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 supabase: Client = Client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_KEY"))
 redis_client = redis.Redis.from_url(os.getenv("REDIS_URL"), decode_responses=True)
+qdrant_url = os.getenv("QDRANT_URL")
+qdrant_api_key = os.getenv("QDRANT_API_KEY")
 
 
 async def get_embedding(text: str) -> List[float]:
@@ -138,6 +141,92 @@ async def retrieve_relevant_documentation_ids(
                 order_ids_list.append(item["metadata"]["order_ids"])
 
         return order_ids_list
+
+    except Exception as e:
+        print(f"Error retrieving documentation: {e}")
+        return []
+
+
+async def retrieve_relevant_documentation_qdrant_ids(
+    embedding: List, match_count: int = 10, filter: str = None
+) -> List[List[int]]:
+    """
+    Retrieve relevant documentation chunks based on the query with RAG.
+
+    Args:
+        embedding: The embedding vector for the query
+        match_count: Number of matches to return
+    Returns:
+        A list of order_ids arrays from the most relevant documentation chunks
+    """
+    qdrant_url = os.getenv("QDRANT_URL")
+    qdrant_api_key = os.getenv("QDRANT_API_KEY")
+    url = f"{qdrant_url}/collections/quran/points/search"
+    if filter is not None:
+        json_body = {
+            "vector": embedding,
+            "limit": match_count,
+            "filter": filter,
+            "with_payload": True,
+        }
+    else:
+        json_body = {"vector": embedding, "limit": match_count, "with_payload": True}
+    try:
+        # Query Qdrant for relevant documents
+        # Search points (POST /collections/:collection_name/points/search)
+        result = requests.post(url, headers={"api-key": qdrant_api_key}, json=json_body)
+        result = result.json()["result"]
+        print(result)
+        if not result:
+            return []
+
+        # Extract order_ids from each result
+        order_ids_list = []
+        for item in result:
+            if "orderIds" in item["payload"]:
+                order_ids_list.append(item["payload"]["orderIds"])
+
+        return order_ids_list
+
+    except Exception as e:
+        print(f"Error retrieving documentation: {e}")
+        return []
+
+
+async def retrieve_relevant_documentation_qdrant_payload(
+    embedding: List, match_count: int = 10, filter: str = None
+) -> List[List[int]]:
+    """
+    Retrieve relevant documentation chunks based on the query with RAG.
+
+    Args:
+        embedding: The embedding vector for the query
+        match_count: Number of matches to return
+    Returns:
+        A list of order_ids arrays from the most relevant documentation chunks
+    """
+    qdrant_url = os.getenv("QDRANT_URL")
+    qdrant_api_key = os.getenv("QDRANT_API_KEY")
+    url = f"{qdrant_url}/collections/quran/points/search"
+    if filter is not None:
+        json_body = {
+            "vector": embedding,
+            "limit": match_count,
+            "filter": filter,
+            "with_payload": True,
+        }
+    else:
+        json_body = {"vector": embedding, "limit": match_count, "with_payload": True}
+    try:
+        # Query Qdrant for relevant documents
+        # Search points (POST /collections/:collection_name/points/search)
+        result = requests.post(url, headers={"api-key": qdrant_api_key}, json=json_body)
+        result = result.json()["result"]
+        print(result)
+        if not result:
+            return []
+
+        return result
 
     except Exception as e:
         print(f"Error retrieving documentation: {e}")
