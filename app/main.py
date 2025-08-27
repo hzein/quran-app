@@ -123,9 +123,8 @@ async def retrieve_ids(
     embedding = await get_embedding(query)
     # Get the filters from the query
     model = os.getenv("GROQ_MODEL")
-    logging.info(f"Model: {model}")
+
     filters = await get_filters_groq(query, model)
-    logging.info(f"Filters: {filters}")
 
     # Create a filter object
     filter = get_query_filters(filters)

@@ -176,7 +176,6 @@ async def retrieve_relevant_documentation_qdrant_ids(
         # Search points (POST /collections/:collection_name/points/search)
         result = requests.post(url, headers={"api-key": qdrant_api_key}, json=json_body)
         result = result.json()["result"]
-        print(result)
         if not result:
             return []
 
