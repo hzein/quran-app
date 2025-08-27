@@ -3,6 +3,28 @@ from app.api.groq_api import generate_groq
 from app.api.openrouter_api import generate_openrouter
 
 
+def get_query_filters(filters: dict) -> dict:
+    """
+    Get the query filters from the user prompt.
+    """
+    print(f"Filters: {filters}")
+    filter_dict = {"should": []}
+    if filters is None:
+        return None
+
+    if "type" in filters:
+        if len(filters["type"]) > 0:
+            for type in filters["type"]:
+                filter_dict["should"].append({"key": "type", "match": {"value": type}})
+    if "subType" in filters:
+        if len(filters["subType"]) > 0:
+            for subType in filters["subType"]:
+                filter_dict["should"].append({"key": "subType", "match": {"value": subType}})
+    if len(filter_dict["should"]) == 0:
+        return None
+    return filter_dict
+
+
 def concatenate_contents(context):
     """
     Concatenates the 'content' field from each item in the API response.
