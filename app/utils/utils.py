@@ -7,7 +7,6 @@ def get_query_filters(filters: dict) -> dict:
     """
     Get the query filters from the user prompt.
     """
-    print(f"Filters: {filters}")
     filter_dict = {"should": []}
     if filters is None:
         return None

@@ -34,7 +34,7 @@ async def generate_groq(query: str, context: str, model: str):
 async def get_filters_groq(query: str, model: str):
     system_prompt = """
     You are an expert in keyword filter extraction from user query. There are two filtration we are looking for:
-    -type: A list of type filters. Return empty list if no filters found. Consist of the following options ['index', 'appendix', 'glossary", 'introduction', 'proclamation', 'preface', 'quran']
+    -type: A list of type filters. Return empty list if no filters found. Consist of the following options ['index', 'appendix', 'glossary", 'introduction', 'proclamation', 'preface']
     -subType: A list of subType filters. Return empty list if no filters found. Consist of the following options ['index', 'appendix <NUMBER>', 'glossary', 'introduction', 'proclamation', 'preface', 'verse'].
     Examples of appendix options are: appendix 1, appendix one, appendix 28, etc.
     Return only in Json format. Example:{'type': [],'subType': ['verse']}
